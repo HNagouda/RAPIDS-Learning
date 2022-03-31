@@ -1,7 +1,7 @@
 # Regular Imports
-from re import template
 import time
 import logging
+import numpy as np
 import pandas as pd
 
 # Accelerators
@@ -11,7 +11,7 @@ from sklearnex import patch_sklearn
 # Data and Metrics
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_wine
-from cuml.metrics import r2_score
+from sklearn.metrics import accuracy_score
 
 # Models
 from sklearn.ensemble import RandomForestClassifier as skrfc
@@ -56,8 +56,6 @@ non_acc_sklearn.fit(X_train, y_train)
 stop = time.time()
 non_acc_time_taken = round(stop-start, 3)
 
-# logger.log(f'Non-Accelerated SKLEARN RandomForestClassifier training time: {non_acc_time_taken} seconds')
-
 # --------------------------------------------------------------
 
 # TRAINING PART 2: Accelerated SKLEARN
@@ -76,11 +74,11 @@ acc_sklearn.fit(X_train, y_train)
 stop = time.time()
 acc_time_taken = round(stop-start, 3)
 
-# logger.log(f'Non-Accelerated SKLEARN RandomForestClassifier training time: {acc_time_taken} seconds')
-
 # --------------------------------------------------------------
 
 # TRAINING PART 3: GPU Accelerated RandomForestClassifer (CUML)
+
+# Convert to gpu based dataframe
 cu_X_train = cudf.DataFrame(X_train)
 cu_y_train = cudf.DataFrame(y_train)
 
@@ -97,22 +95,63 @@ cuml_acc_sklearn.fit(cu_X_train, cu_y_train)
 stop = time.time()
 cuml_acc_time_taken = round(stop-start, 3)
 
-# logger.log(f'Non-Accelerated SKLEARN RandomForestClassifier training time: {cuml_acc_time_taken} seconds')
+# --------------------------------------------------------------
+
+# INFERENCE 
+
+models = [non_acc_sklearn, acc_sklearn, cuml_acc_sklearn]
+
+inference_times, inference_scores = [], []
+
+for model in models:
+    start = time.time()
+
+    predictions = model.predict(X_test)
+    score = round(accuracy_score(y_test, predictions), 3)
+
+    stop = time.time()
+    total_time = round(stop-start, 3)
+
+    inference_times.append(total_time)
+    inference_scores.append(score)
 
 # --------------------------------------------------------------
 
-# Plot performance
+# Plot training performance
 fig = px.bar(
     x = ['Scikit-Learn', 'Scikit-Learn-Intelex', 'RAPIDS cuml'],
     y = [non_acc_time_taken, acc_time_taken, cuml_acc_time_taken],
     text = [non_acc_time_taken, acc_time_taken, cuml_acc_time_taken],
     template = 'plotly_dark',
     color_discrete_sequence = ['#f4a261'],
-    title = 'Wine Dataset Training Time'
+    title = 'Wine Dataset Training Time with RandomForestClassifier'
 )
 
 fig.update_xaxes(title = 'Library Used')
 fig.update_yaxes(title = 'Training Time (seconds)')
 
-fig.write_image('plots/RandomForestPerformance.png')
-fig.write_image('plots/RandomForestPerformance.svg')
+fig.write_image('plots/WineDataset_TrainingTime_RandomForest.svg')
+
+# --------------------------------------------------------------
+
+# Plot inference performance
+df = pd.DataFrame(
+    {
+        'library': ['Scikit-Learn', 'Scikit-Learn-Intelex', 'RAPIDS cuml'],
+        'inference_time': inference_times,
+        'inference_score': inference_scores
+    }
+)
+
+fig1 = px.bar(df, x = 'library', y = 'inference_time', template = 'plotly_dark', 
+                    color_discrete_sequence = ['#2a9d8f'], text = 'inference_time',
+                    title = 'Wine Dataset Inference Time (seconds) with RandomForestClassifier')
+
+fig2 = px.bar(df, x = 'library', y = 'inference_score', template = 'plotly_dark', 
+                    color_discrete_sequence = ['#2a9d8f'], text = 'inference_score',
+                    title = 'Wine Dataset Inference Score with RandomForestClassifier')
+
+fig1.write_image('plots/WineDataset_InferenceTime_RandomForest.svg')
+fig2.write_image('plots/WineDataset_InferenceScore_RandomForest.svg')
+
+# --------------------------------------------------------------
