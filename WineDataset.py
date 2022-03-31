@@ -130,7 +130,8 @@ fig = px.bar(
 fig.update_xaxes(title = 'Library Used')
 fig.update_yaxes(title = 'Training Time (seconds)')
 
-fig.write_image('plots/WineDataset_TrainingTime_RandomForest.svg')
+fig.write_image('plots/svg/WineDataset_TrainingTime_RandomForest.svg')
+fig.write_html('plots/html/WineDataset_TrainingTime_RandomForest.html')
 
 # --------------------------------------------------------------
 
@@ -151,7 +152,10 @@ fig2 = px.bar(df, x = 'library', y = 'inference_score', template = 'plotly_dark'
                     color_discrete_sequence = ['#2a9d8f'], text = 'inference_score',
                     title = 'Wine Dataset Inference Score with RandomForestClassifier')
 
-fig1.write_image('plots/WineDataset_InferenceTime_RandomForest.svg')
-fig2.write_image('plots/WineDataset_InferenceScore_RandomForest.svg')
+fig1.write_image('plots/svg/WineDataset_InferenceTime_RandomForest.svg')
+fig2.write_image('plots/svg/WineDataset_InferenceScore_RandomForest.svg')
+
+fig1.write_html('plots/html/WineDataset_InferenceTime_RandomForest.html')
+fig2.write_html('plots/html/WineDataset_InferenceScore_RandomForest.html')
 
 # --------------------------------------------------------------
