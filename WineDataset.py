@@ -11,7 +11,7 @@ from sklearnex import patch_sklearn
 # Data and Metrics
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import load_wine
-from sklearn.metrics import accuracy_score
+from cuml.metrics import accuracy_score
 
 # Models
 from sklearn.ensemble import RandomForestClassifier as skrfc
@@ -34,6 +34,7 @@ logger.addHandler(fh)
 # Load Dataset
 wine = load_wine()
 features, target = load_wine(return_X_y=True)
+target = pd.Series(target.astype(np.int32))
 
 # Create splits
 X_train, X_test, y_train, y_test = train_test_split(
@@ -79,8 +80,8 @@ acc_time_taken = round(stop-start, 3)
 # TRAINING PART 3: GPU Accelerated RandomForestClassifer (CUML)
 
 # Convert to gpu based dataframe
-cu_X_train = cudf.DataFrame(X_train)
-cu_y_train = cudf.DataFrame(y_train)
+X_cudf_train = cudf.DataFrame(X_train)
+X_cudf_test = cudf.DataFrame(X_test)
 
 start = time.time()
 
@@ -90,7 +91,7 @@ cuml_acc_sklearn = curfc(
     random_state=757
 )
 
-cuml_acc_sklearn.fit(cu_X_train, cu_y_train)
+cuml_acc_sklearn.fit(X_cudf_train, y_train)
 
 stop = time.time()
 cuml_acc_time_taken = round(stop-start, 3)
@@ -130,8 +131,7 @@ fig = px.bar(
 fig.update_xaxes(title = 'Library Used')
 fig.update_yaxes(title = 'Training Time (seconds)')
 
-fig.write_image('plots/svg/WineDataset_TrainingTime_RandomForest.svg')
-fig.write_html('plots/html/WineDataset_TrainingTime_RandomForest.html')
+fig.write_image('plots/WineDataset_TrainingTime_RandomForest.svg')
 
 # --------------------------------------------------------------
 
@@ -152,10 +152,7 @@ fig2 = px.bar(df, x = 'library', y = 'inference_score', template = 'plotly_dark'
                     color_discrete_sequence = ['#2a9d8f'], text = 'inference_score',
                     title = 'Wine Dataset Inference Score with RandomForestClassifier')
 
-fig1.write_image('plots/svg/WineDataset_InferenceTime_RandomForest.svg')
-fig2.write_image('plots/svg/WineDataset_InferenceScore_RandomForest.svg')
-
-fig1.write_html('plots/html/WineDataset_InferenceTime_RandomForest.html')
-fig2.write_html('plots/html/WineDataset_InferenceScore_RandomForest.html')
+fig1.write_image('plots/WineDataset_InferenceTime_RandomForest.svg')
+fig2.write_image('plots/WineDataset_InferenceScore_RandomForest.svg')
 
 # --------------------------------------------------------------
